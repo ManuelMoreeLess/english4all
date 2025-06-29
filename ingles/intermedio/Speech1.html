@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Conversation App</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --user-msg-bg: #007bff;
+            --bot-msg-bg: #e9ecef;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 123, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        #transcript-container {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        .user-message {
+            background-color: var(--user-msg-bg);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot-message {
+            background-color: var(--bot-msg-bg);
+            color: var(--text-color);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        footer {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            background-color: var(--card-bg);
+            flex-shrink: 0;
+        }
+
+        #status {
+            font-size: 1rem;
+            color: var(--secondary-color);
+            min-height: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        #talk-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 2.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        #talk-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            background-color: #0056b3;
+        }
+
+        #talk-btn:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+        }
+
+        #talk-btn.listening {
+            animation: pulse 1.5s infinite;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>AI Voice Assistant</h1>
+    </header>
+    
+    <div id="transcript-container">
+        <!-- Conversation will appear here -->
+    </div>
+    
+    <footer>
+        <div id="status">Click the button and start talking</div>
+        <button id="talk-btn">🎤</button>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const talkBtn = document.getElementById('talk-btn');
+        const statusDiv = document.getElementById('status');
+        const transcriptContainer = document.getElementById('transcript-container');
+
+        // --- Check for API support ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const speechSynthesis = window.speechSynthesis;
+
+        if (!SpeechRecognition || !speechSynthesis) {
+            statusDiv.textContent = "Sorry, your browser does not support the required Speech APIs.";
+            talkBtn.disabled = true;
+            return;
+        }
+
+        // --- NEW: Voice Selection Logic ---
+        let femaleVoice = null;
+
+        function loadVoices() {
+            const voices = speechSynthesis.getVoices();
+            // Try to find a specific, high-quality female voice first
+            femaleVoice = voices.find(voice => voice.name === 'Google US English') || 
+                          voices.find(voice => voice.name === 'Samantha') ||
+                          voices.find(voice => voice.name === 'Microsoft Zira - English (United States)');
+            
+            // If not found, try a more generic search for any English voice with "Female" in its name
+            if (!femaleVoice) {
+                femaleVoice = voices.find(voice => voice.lang.startsWith('en') && voice.name.includes('Female'));
+            }
+            // As a final fallback, just grab the first available English voice
+            if (!femaleVoice) {
+                femaleVoice = voices.find(voice => voice.lang.startsWith('en'));
+            }
+        }
+        
+        // The list of voices is loaded asynchronously. We need to wait for it.
+        speechSynthesis.onvoiceschanged = loadVoices;
+        // Call it once in case the voices are already loaded.
+        loadVoices();
+
+
+        // --- Speech Recognition Setup ---
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; 
+        recognition.interimResults = false;
+        recognition.continuous = false; 
+
+        // --- Chatbot "Brain" ---
+        const responses = new Map([
+            [['hello', 'hi', 'hey'], "Hello there! How can I help you today?"],
+            [['how are you'], "I'm just a bunch of code, but I'm feeling great! Thanks for asking."],
+            [['what is your name', 'what\'s your name'], "I don't have a name, but you can call me your friendly AI assistant."],
+            [['weather'], "I can't check the real weather, but I hope it's sunny wherever you are!"],
+            [['tell me a joke', 'joke'], () => {
+                const jokes = [
+                    "Why don't scientists trust atoms? Because they make up everything!",
+                    "What do you call a fake noodle? An Impasta!",
+                    "Why did the scarecrow win an award? Because he was outstanding in his field!"
+                ];
+                return jokes[Math.floor(Math.random() * jokes.length)];
+            }],
+            [['time'], `The time is currently ${new Date().toLocaleTimeString()}.`],
+            [['thank you', 'thanks'], "You're welcome!"],
+            [['goodbye', 'bye', 'stop'], "Goodbye! Have a great day."],
+        ]);
+
+        // --- Core Functions ---
+        function speak(text) {
+            return new Promise((resolve) => {
+                logMessage(text, 'bot');
+                statusDiv.textContent = "Thinking...";
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // <<< MODIFIED: Apply the selected female voice >>>
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
+                }
+                
+                utterance.onend = () => {
+                    resolve();
+                };
+                
+                speechSynthesis.speak(utterance);
+            });
+        }
+
+        function getBotResponse(userText) {
+            userText = userText.toLowerCase();
+            for (const [keywords, response] of responses.entries()) {
+                for (const keyword of keywords) {
+                    if (userText.includes(keyword)) {
+                        return typeof response === 'function' ? response() : response;
+                    }
+                }
+            }
+            return "I'm not sure how to respond to that. Can you try asking something else?";
+        }
+        
+        function logMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${sender}-message`);
+            messageDiv.textContent = text;
+            transcriptContainer.appendChild(messageDiv);
+            transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+        }
+
+        // --- Event Handlers ---
+        talkBtn.addEventListener('click', () => {
+            // Stop any currently speaking utterance before starting to listen
+            speechSynthesis.cancel();
+            recognition.start();
+        });
+
+        recognition.onstart = () => {
+            statusDiv.textContent = "Listening...";
+            talkBtn.classList.add('listening');
+            talkBtn.disabled = true;
+        };
+
+        recognition.onresult = async (event) => {
+            const userText = event.results[0][0].transcript;
+            logMessage(userText, 'user');
+            
+            const botResponseText = getBotResponse(userText);
+            await speak(botResponseText);
+            
+            if (!userText.toLowerCase().includes('goodbye') && !userText.toLowerCase().includes('bye')) {
+                 statusDiv.textContent = "Click the button to talk again.";
+            } else {
+                 statusDiv.textContent = "Session ended.";
+            }
+        };
+
+        recognition.onerror = (event) => {
+            if (event.error === 'no-speech') {
+                statusDiv.textContent = "I didn't hear anything. Try again.";
+            } else {
+                statusDiv.textContent = `Error: ${event.error}`;
+            }
+        };
+
+        recognition.onend = () => {
+            talkBtn.classList.remove('listening');
+            if (statusDiv.textContent !== "Session ended.") {
+                 talkBtn.disabled = false;
+                 statusDiv.textContent = "Click the button to talk again.";
+            }
+        };
+
+        // Greet the user on startup. We wait a little for voices to load.
+        setTimeout(() => {
+             speak("Hello, I am your voice assistant. Click the microphone to start our conversation.");
+        }, 500);
+    });
+</script>
+
+</body>
+</html>
