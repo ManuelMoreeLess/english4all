@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prática de Conversação em Inglês com IA</title>
+    <style>
+        /* --- GERAL --- */
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --user-bubble-bg: #e1f5fe;
+            --ai-bubble-bg: #f1f3f4;
+            --text-color: #202124;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            max-height: 900px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .hidden { display: none !important; }
+
+        /* --- TELA DE CONFIGURAÇÃO --- */
+        #setup-screen {
+            padding: 40px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-grow: 1;
+        }
+        #setup-screen h1 { color: var(--primary-color); }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { font-weight: bold; display: block; margin-bottom: 8px; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .button { background-color: var(--primary-color); color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; width: 100%; }
+        .button:hover { background-color: #3367D6; }
+
+        /* --- TELA DE CONVERSA --- */
+        #conversation-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        #chat-log {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-message {
+            padding: 12px 18px;
+            border-radius: 20px;
+            max-width: 75%;
+            line-height: 1.5;
+        }
+        .user-message {
+            background-color: var(--user-bubble-bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        .ai-message {
+            background-color: var(--ai-bubble-bg);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        .ai-message .correction {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #dadce0;
+            font-style: italic;
+            color: #5f6368;
+        }
+        #controls {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        #speak-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--secondary-color);
+            color: white;
+            font-size: 24px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        #speak-btn:hover { transform: scale(1.1); }
+        #speak-btn.listening {
+            background-color: #d93025; /* Red when listening */
+            animation: pulse 1.5s infinite;
+        }
+        #status { margin-top: 10px; color: #5f6368; min-height: 20px; }
+        #end-session-btn {
+            position: absolute; top: 10px; right: 10px;
+            background: #f1f3f4; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+        }
+        #end-session-btn:hover { background: #e8eaed; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(4, 170, 109, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(4, 170, 109, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(4, 170, 109, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- TELA 1: SETUP -->
+        <div id="setup-screen">
+            <h1>English Conversation Practice</h1>
+            <p>Set a topic and start speaking with the AI tutor.</p>
+            <div class="input-group">
+                <label for="api-key-input">Your Google Gemini API Key:</label>
+                <input type="password" id="api-key-input" placeholder="Paste your API key here">
+            </div>
+            <div class="input-group">
+                <label for="topic-input">Conversation Topic:</label>
+                <input type="text" id="topic-input" placeholder="e.g., Being a musician, traveling, cooking">
+            </div>
+            <button id="start-btn" class="button">Start Conversation</button>
+            <p id="browser-support" style="margin-top: 20px; color: #888;"></p>
+        </div>
+
+        <!-- TELA 2: CONVERSA -->
+        <div id="conversation-screen" class="hidden">
+            <button id="end-session-btn" title="End Session">✖️</button>
+            <div id="chat-log"></div>
+            <div id="controls">
+                <button id="speak-btn" title="Hold to Speak">🎤</button>
+                <p id="status">Click the microphone to speak</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const setupScreen = document.getElementById('setup-screen');
+        const conversationScreen = document.getElementById('conversation-screen');
+        const startBtn = document.getElementById('start-btn');
+        const speakBtn = document.getElementById('speak-btn');
+        const endSessionBtn = document.getElementById('end-session-btn');
+        const chatLog = document.getElementById('chat-log');
+        const statusEl = document.getElementById('status');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const topicInput = document.getElementById('topic-input');
+        const browserSupportEl = document.getElementById('browser-support');
+
+        // --- Web Speech API Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechSynthesis = window.speechSynthesis;
+        let recognition;
+
+        if (!SpeechRecognition || !SpeechSynthesis) {
+            browserSupportEl.textContent = "Sorry, your browser doesn't support the Web Speech API. Please try Google Chrome.";
+            startBtn.disabled = true;
+        } else {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+        }
+
+        // --- State Variables ---
+        let apiKey = '';
+        let conversationHistory = [];
+        let isListening = false;
+        let systemPrompt = '';
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startConversation);
+        endSessionBtn.addEventListener('click', resetApp);
+        speakBtn.addEventListener('click', toggleListening);
+
+        recognition.onstart = () => {
+            isListening = true;
+            speakBtn.classList.add('listening');
+            statusEl.textContent = 'Listening...';
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            speakBtn.classList.remove('listening');
+            statusEl.textContent = 'Click the microphone to speak';
+        };
+
+        recognition.onresult = (event) => {
+            const userText = event.results[0][0].transcript;
+            addMessageToLog('user', userText);
+            conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
+            getAIResponse();
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error', event.error);
+            statusEl.textContent = `Error: ${event.error}. Try again.`;
+        };
+        
+        // --- Core Functions ---
+        function startConversation() {
+            apiKey = apiKeyInput.value.trim();
+            const topic = topicInput.value.trim();
+
+            if (!apiKey || !topic) {
+                alert('Please provide your API key and a conversation topic.');
+                return;
+            }
+
+            systemPrompt = `
+                You are an advanced AI English tutor. Your goal is to have a natural, encouraging conversation with a student in English.
+                The student wants to talk about this topic: "${topic}".
+
+                Your rules are:
+                1. Start the conversation with a friendly opening question about the topic.
+                2. Listen to the student's response.
+                3. Respond conversationally to what they said to keep the dialogue flowing.
+                4. **CRITICAL RULE:** If you detect a potential pronunciation or grammar mistake in the student's response, gently correct them.
+                   - First, continue the conversation naturally.
+                   - Then, add your correction at the end of your message in this exact format:
+                     <correction>You said: "[student's phrase with error]". I think you meant: "[corrected phrase]".</correction>
+                   - Only include the <correction> tag if you are confident there is a mistake.
+                5. Keep your responses concise.
+            `;
+            
+            conversationHistory.push({ role: 'user', parts: [{ text: `Let's start. My topic is: ${topic}` }] });
+
+            setupScreen.classList.add('hidden');
+            conversationScreen.classList.remove('hidden');
+            
+            getAIResponse(true); // Get the initial opening message from the AI
+        }
+
+        function toggleListening() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                if(SpeechSynthesis.speaking) {
+                    SpeechSynthesis.cancel(); // Stop the AI from speaking if the user interrupts
+                }
+                recognition.start();
+            }
+        }
+
+        async function getAIResponse(isInitial = false) {
+            statusEl.textContent = 'AI is thinking...';
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+            const requestBody = {
+                contents: conversationHistory,
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error.message);
+                }
+
+                const data = await response.json();
+                const aiText = data.candidates[0].content.parts[0].text;
+                
+                conversationHistory.push({ role: 'model', parts: [{ text: aiText }] });
+                addMessageToLog('ai', aiText);
+                speakText(aiText);
+
+            } catch (error) {
+                console.error("API Error:", error);
+                addMessageToLog('ai', `Sorry, an error occurred: ${error.message}`);
+            }
+        }
+        
+        function speakText(text) {
+            // Remove the correction part before speaking for a more natural flow
+            const textToSpeak = text.replace(/<correction>.*?<\/correction>/s, '').trim();
+            
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'en-US';
+            
+            // Try to find a good quality voice
+            const voices = SpeechSynthesis.getVoices();
+            utterance.voice = voices.find(v => v.name.includes('Google') && v.lang.includes('en-US')) || voices.find(v => v.lang.includes('en-US'));
+
+            utterance.onend = () => {
+                statusEl.textContent = 'Your turn. Click the microphone.';
+            };
+            
+            SpeechSynthesis.speak(utterance);
+        }
+
+        function addMessageToLog(sender, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}-message`;
+            
+            // Sanitize text and look for our custom correction tag
+            let sanitizedText = text.replace(/</g, "<").replace(/>/g, ">");
+            const correctionRegex = /<correction>(.*?)<\/correction>/s;
+            const match = sanitizedText.match(correctionRegex);
+
+            if (match) {
+                const mainText = sanitizedText.replace(correctionRegex, '').trim();
+                const correctionText = match[1].trim();
+                messageDiv.innerHTML = `${mainText}<div class="correction">${correctionText}</div>`;
+            } else {
+                messageDiv.textContent = text;
+            }
+
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        function resetApp() {
+            conversationHistory = [];
+            chatLog.innerHTML = '';
+            apiKeyInput.value = '';
+            topicInput.value = '';
+            conversationScreen.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+        }
+
+        // It can take a moment for voices to load, this helps ensure they are available
+        SpeechSynthesis.onvoiceschanged = () => {
+            console.log("Voices loaded.");
+        };
+
+    </script>
+</body>
+</html>
