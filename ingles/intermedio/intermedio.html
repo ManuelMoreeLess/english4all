@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>English 4 All - Nível Básico</title>
+<title>English 4 All - Nível Intermédio</title>
 <style>
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -11,14 +11,18 @@
     color: #222;
     margin: 0;
     padding: 20px;
-    display: flex; justify-content: center; align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     min-height: 100vh;
   }
   .container {
     background: #fff;
     padding: 30px 35px;
     border-radius: 15px;
-    max-width: 450px;
+    /* Aumentado para acomodar mais botões */
+    max-width: 750px; 
+    width: 100%;
     text-align: center;
     box-shadow: 0 8px 24px rgba(102, 166, 255, 0.5);
   }
@@ -30,7 +34,16 @@
     font-size: 1.15rem;
     margin-bottom: 30px;
   }
-  a.btn-back {
+  /* Novo container para os botões */
+  .button-grid {
+    display: flex;
+    flex-wrap: wrap; /* Permite que os botões quebrem a linha */
+    justify-content: center;
+    gap: 15px; /* Espaçamento entre os botões */
+    margin-bottom: 30px; /* Espaço antes do botão "Voltar" */
+  }
+  
+  a.btn-link, a.btn-back {
     text-decoration: none;
     display: inline-block;
     background: #004aad;
@@ -39,21 +52,49 @@
     border-radius: 10px;
     font-weight: 600;
     box-shadow: 0 4px 15px rgba(0,74,173,0.6);
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s ease;
   }
+  a.btn-link:hover,
+  a.btn-link:focus,
   a.btn-back:hover,
   a.btn-back:focus {
     background: #002f75;
+    transform: translateY(-2px); /* Efeito de elevação */
     outline: none;
   }
+  /* Estilo diferente para o botão de voltar, se desejar */
+  a.btn-back {
+      background-color: #555;
+  }
+   a.btn-back:hover,
+   a.btn-back:focus {
+      background-color: #333;
+   }
+
 </style>
 </head>
 <body>
-  <div class="container" role="main" aria-label="Nível Básico do curso English 4 All">
-    <h1>Nível Intermédio</h1>
-    <p>Bem-vindo ao nível intermédio! "Bora turbinar o inglês? 🚀 Aqui você vai entrar numa fase com vocabulário intermediário, frases mais avançadas e muito conteúdo legal pra destravar de vez na conversação! 😎📚".</p>
+  <div class="container" role="main" aria-label="Nível Intermédio do curso English 4 All">
+    <h1>Intermediate Level</h1>
+    <p> Welcome to the intermediate level! “What would you like to learn... 😎📚 Just tap and the link will take you to the content you chose. Enjoy and study to improve your English! 😎”</p>
+    
+    <!-- Grade com 10 botões de exemplo -->
+    <div class="button-grid">
+      <a href="dialogo1.html" class="btn-link" aria-label="Ir para a Lição 1">Dialogue1</a>  
+      <a href="dialogo2.html" class="btn-link" aria-label="Ir para a Lição 2">Dialogue2</a>  
+      <a href="dialogo3.html" class="btn-link" aria-label="Ir para a Lição 3">Dialogue3</a>  
+      <!--<a href="#" class="btn-link" aria-label="Ir para a Lição 4">Lição 4</a>  
+      <a href="#" class="btn-link" aria-label="Ir para a Lição 5">Lição 5</a>  
+      <a href="#" class="btn-link" aria-label="Ir para os Exercícios de Vocabulário">Vocabulário</a>  
+      <a href="#" class="btn-link" aria-label="Ir para os Exercícios de Gramática">Gramática</a>  
+      <a href="#" class="btn-link" aria-label="Ir para a Prática de Escuta">Listening</a>  
+      <a href="#" class="btn-link" aria-label="Fazer o Quiz da Unidade">Quiz</a>  
+      <a href="#" class="btn-link" aria-label="Ver o Projeto Final">Projeto Final</a>-->  
+    </div>
+
+    <!-- Botão de voltar separado no final -->
     <a href="../../index.html" class="btn-back" aria-label="Voltar à página inicial do curso">Voltar ao Início</a>
-    <a href="dialogo1.html" class="btn-back" aria-label="Iniciar Curso basico de ingles">Iniciar Curso</a>  
+
   </div>
 </body>
 </html>
