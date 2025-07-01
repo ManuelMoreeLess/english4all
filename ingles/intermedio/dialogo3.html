@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Conference Comprehension Quiz</title>
+    <style>
+        :root { --primary-color: #2c3e50; --secondary-color: #34495e; --bg-color: #ecf0f1; --card-bg: #ffffff; --border-color: #dcdde1; --text-color: #34495e; --success-color: #27ae60; --danger-color: #c0392b; --success-bg: #e8f5e9; --danger-bg: #f9ebea; --timer-color: #e67e22;}
+        body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; }
+        .container { max-width: 800px; margin: 20px auto; background-color: var(--card-bg); border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); padding: 30px; }
+        h1 { text-align: center; color: var(--primary-color); }
+        .instructions { background-color: #eaf2f8; border-left: 5px solid #3498db; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        #dialogue-container { font-family: Georgia, 'Times New Roman', Times, serif; background-color: #fafafa; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        #dialogue-container p { margin: 10px 0; }
+        
+        .controls { text-align: center; margin-bottom: 25px; }
+        button { background-color: var(--primary-color); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; }
+        button:hover { background-color: var(--secondary-color); transform: translateY(-1px); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        #speak-btn.active { background-color: #e67e22; }
+
+        #quiz-section { border-top: 2px solid var(--primary-color); padding-top: 20px; }
+        #timer { font-size: 1.5em; font-weight: bold; text-align: center; color: var(--timer-color); margin-bottom: 15px; }
+        .question-block { margin-bottom: 20px; }
+        .question-block p { font-weight: bold; }
+        .quiz-option { display: block; background-color: #f9f9f9; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; margin: 5px 0; cursor: pointer; }
+        .quiz-option.selected { background-color: #ddeaff; }
+        .quiz-option.correct { background-color: var(--success-bg) !important; border-left: 5px solid var(--success-color); }
+        .quiz-option.incorrect { background-color: var(--danger-bg) !important; border-left: 5px solid var(--danger-color); }
+        #results { text-align: center; font-weight: bold; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        
+        @media (max-width: 600px) { .container { padding: 15px; } button { width: 100%; margin-top: 10px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reading Comprehension Quiz</h1>
+        <div class="instructions">
+            <p><strong>Instruction:</strong> First, read the text below. Then, click "Read Aloud" to listen to the audio before starting the quiz.</p>
+        </div>
+        <div id="dialogue-container">
+          <h2>An International Conference to Remember</h2>
+          <p>Last week, an international health and diplomacy conference was held in Geneva. The event was attended by world leaders, scientists, and journalists from around the globe. Unfortunately, things got off to a rocky start. The restaurant drew a lot of negative publicity after the food poisoning incident, which affected several delegates on the first night. Health authorities were immediately alerted.</p>
+          <p>Despite the initial setback, the conference moved forward. One of the main presentations focused on how some old cartoons have a lot of propaganda in favor of the war, revealing how media shaped public opinion during wartime.</p>
+          <p>Later that afternoon, a special session was held to discuss new pharmaceutical developments. Scientists emphasized that the potency of the new drug is still unknown, and further clinical trials would be needed before public release.</p>
+          <p>When it came time for the political summit, we were met by a functionary who led us to meet the committee overseeing the peace negotiations. Tensions were high, but progress was made.</p>
+          <p>Among the diplomats, one figure stood out. He has a very suave manner about him, which helped ease communication between opposing sides.</p>
+          <p>Still, there were delays in the schedule. "He's notorious for being late," one delegate whispered about a key negotiator who arrived nearly an hour behind.</p>
+          <p>At the end of the event, there was a sense of accomplishment. The two presidents signed a peace accord, marking a significant step toward regional stability.</p>
+        </div>
+        <div class="controls">
+            <button id="speak-btn" onclick="toggleSpeak()">🔊 Read Aloud</button>
+            <button id="start-quiz-btn" onclick="startQuiz()">🧠 Start Quiz</button>
+        </div>
+        
+        <div id="quiz-section" style="display:none;">
+            <div id="timer" style="display:none;">03:00</div>
+            <div id="quiz-container"></div>
+            <div id="results"></div>
+            <button id="submit-btn" onclick="submitQuiz()">Submit Answers</button>
+            <button id="retry-btn" onclick="location.reload()" style="display:none; background-color: #e67e22;">Retry Quiz</button>
+        </div>
+    </div>
+    
+    <script>
+        // === UPDATED QUIZ DATA ===
+        const quizData = [
+            { question: "Where was the international conference held?", answer: "Geneva", options: ["Paris", "Geneva", "Berlin", "New York"] },
+            { question: "Who attended the conference?", answer: "World leaders, scientists, and journalists", options: ["Only doctors", "Scientists and journalists", "World leaders, scientists, and journalists", "Diplomats only"] },
+            { question: "What unfortunate event happened on the first night?", answer: "Food poisoning", options: ["A protest", "Food poisoning", "A power outage", "A missing speaker"] },
+            { question: "How did the media react to the food incident?", answer: "Gave negative publicity", options: ["Ignored it", "Celebrated the event", "Gave negative publicity", "Interviewed the chef"] },
+            { question: "What topic was discussed in a presentation?", answer: "War propaganda in old cartoons", options: ["Modern cartoons", "War propaganda in old cartoons", "The history of TV", "Diplomatic speeches"] },
+            { question: "What was said about the new drug?", answer: "It still needed trials", options: ["It was ready for use", "It cured everyone", "It still needed trials", "It was rejected"] },
+            { question: "Who helped ease tensions during negotiations?", answer: "A suave diplomat", options: ["A journalist", "A suave diplomat", "The president", "A scientist"] },
+            { question: "Why were there delays in the schedule?", answer: "A key negotiator arrived late", options: ["Technical problems", "A key negotiator arrived late", "Traffic jam", "Protests outside"] },
+            { question: "What was the result at the end of the event?", answer: "A peace accord signed", options: ["A scientific discovery", "A peace accord signed", "No agreement", "A cultural concert"] },
+            { question: "What is the main theme of the conference?", answer: "Health, media, and peace", options: ["Cooking techniques", "Sports diplomacy", "Health, media, and peace", "Architecture and tourism"] }
+        ];
+
+        let voices = [];
+        let femaleVoice = null;
+        let timerInterval = null;
+        let speechApiIsReady = false;
+
+        function populateVoiceList() {
+            if (typeof speechSynthesis === 'undefined') { return; }
+            voices = speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                femaleVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google US English'))) || voices.find(v => v.lang.startsWith('en'));
+                speechApiIsReady = true;
+                
+                if(window.speechSynthesisInterval) {
+                    clearInterval(window.speechSynthesisInterval);
+                }
+                window.speechSynthesisInterval = setInterval(() => {
+                    if (speechSynthesis.paused) speechSynthesis.resume();
+                }, 14000);
+            }
+        }
+
+        if (typeof speechSynthesis !== 'undefined') {
+            populateVoiceList();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+        } else {
+            document.getElementById('speak-btn').disabled = true;
+            document.getElementById('speak-btn').textContent = '❌ Speech Not Supported';
+        }
+
+        function toggleSpeak() {
+            const speakBtn = document.getElementById('speak-btn');
+            
+            if (!speechApiIsReady) {
+                alert('The Speech API is not ready yet. Please try again in a moment.');
+                return;
+            }
+
+            if (speechSynthesis.speaking) {
+                speechSynthesis.pause();
+                speakBtn.textContent = '▶️ Resume';
+                speakBtn.classList.remove('active');
+            } else if (speechSynthesis.paused) {
+                speechSynthesis.resume();
+                speakBtn.textContent = '⏸️ Pause';
+                speakBtn.classList.add('active');
+            } else {
+                speechSynthesis.cancel();
+                const textToSpeak = document.getElementById('dialogue-container').textContent;
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
+                }
+                utterance.lang = 'en-US';
+                
+                utterance.onend = () => {
+                    speakBtn.textContent = '🔊 Read Aloud';
+                    speakBtn.classList.remove('active');
+                };
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesisUtterance.onerror', event);
+                    alert('An error occurred while trying to play the audio: ' + event.error);
+                    speakBtn.textContent = '🔊 Read Aloud';
+                    speakBtn.classList.remove('active');
+                };
+
+                speechSynthesis.speak(utterance);
+                speakBtn.textContent = '⏸️ Pause';
+                speakBtn.classList.add('active');
+            }
+        }
+        
+        function startQuiz() {
+            document.getElementById('start-quiz-btn').style.display = 'none';
+            document.getElementById('quiz-section').style.display = 'block';
+            
+            const quizContainer = document.getElementById('quiz-container');
+            quizContainer.innerHTML = '';
+            quizData.forEach((item, index) => {
+                const block = document.createElement('div');
+                block.className = 'question-block';
+                const shuffledOptions = [...item.options].sort(() => Math.random() - 0.5);
+                block.innerHTML = `<p>${index + 1}. ${item.question}</p>`;
+                shuffledOptions.forEach(opt => {
+                    block.innerHTML += `<label class="quiz-option"><input type="radio" name="q${index}" value="${opt.replace(/"/g, '"')}"> ${opt}</label>`;
+                });
+                quizContainer.appendChild(block);
+            });
+        }
+
+        function submitQuiz() {
+            if(timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            let score = 0;
+            quizData.forEach((item, index) => {
+                const selectedRadio = document.querySelector(`input[name="q${index}"]:checked`);
+                const options = document.querySelectorAll(`input[name="q${index}"]`);
+                options.forEach(opt => {
+                    const label = opt.parentElement;
+                    opt.disabled = true;
+                    label.style.cursor = 'default';
+                    if (opt.value === item.answer) {
+                        label.classList.add('correct');
+                    } else if (selectedRadio && opt.value === selectedRadio.value) {
+                        label.classList.add('incorrect');
+                    }
+                });
+                if (selectedRadio && selectedRadio.value === item.answer) {
+                    score++;
+                }
+            });
+
+            const percentage = ((score / quizData.length) * 100).toFixed(0);
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `You scored ${score} out of ${quizData.length} (${percentage}%)!`;
+            
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('retry-btn').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
