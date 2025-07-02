@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz: Vocabulário de Hotel</title>
+  <style>
+    :root {
+      --primary-color: #8e44ad;
+      --secondary-color: #9b59b6;
+      --bg-color: #f4f6f7;
+      --card-bg: #ffffff;
+      --border-color: #dcdde1;
+      --text-color: #34495e;
+      --success-color: #2ecc71;
+      --danger-color: #e74c3c;
+      --success-bg: #eafaf1;
+      --danger-bg: #f9ebea;
+      --timer-color: #e67e22;
+    }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+    }
+    .instructions {
+      background-color: #fdf9e7;
+      border-left: 5px solid #f1c40f;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 5px;
+    }
+    .controls {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    button:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      background-color: #bdc3c7;
+      cursor: not-allowed;
+    }
+    #quiz-section {
+      border-top: 2px solid var(--primary-color);
+      padding-top: 20px;
+      margin-top: 20px;
+    }
+    .question-block {
+      margin-bottom: 20px;
+    }
+    .question-block p {
+      font-weight: bold;
+    }
+    .quiz-option {
+      display: block;
+      background-color: #f9f9f9;
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      margin: 5px 0;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .quiz-option:hover {
+      background-color: #f0f0f0;
+    }
+    .quiz-option.selected {
+      background-color: #ddeaff;
+    }
+    .quiz-option.correct {
+      background-color: var(--success-bg) !important;
+      border-left: 5px solid var(--success-color);
+    }
+    .quiz-option.incorrect {
+      background-color: var(--danger-bg) !important;
+      border-left: 5px solid var(--danger-color);
+    }
+    #results {
+      text-align: center;
+      font-weight: bold;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+
+    /* ==== INÍCIO: CSS do botão Quiz Vocabulary ==== */
+    .botao-link {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      text-decoration: none;
+      border-radius: 8px;
+      display: inline-block;
+      transition: background-color 0.3s;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .botao-link:hover {
+      background-color: var(--secondary-color);
+    }
+    /* ==== FIM: CSS do botão Quiz Vocabulary ==== */
+
+    @media (max-width: 600px) {
+      .container { padding: 15px; }
+      button, .botao-link {
+        width: 100%;
+        margin-top: 10px;
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📘 Quiz: Vocabulário em Inglês – Serviços de Hotel</h1>
+    <div class="instructions">
+      <p><strong>Instrução:</strong> Leia cada pergunta e selecione a tradução ou o significado correto. Boa sorte!</p>
+    </div>
+
+    <div class="controls">
+      <button id="start-quiz-btn" onclick="startQuiz()">🧠 Começar o Quiz</button>
+      <a href="dialogo1.html" class="botao-link" style="margin-left: 10px;">📘 Retroceder</a>
+    </div>
+
+    <div id="quiz-section" style="display:none;">
+      <div id="quiz-container"></div>
+      <div id="results"></div>
+      <button id="submit-btn" onclick="submitQuiz()" style="display:none;">Enviar Respostas</button>
+      <button id="retry-btn" onclick="location.reload()" style="display:none; background-color: #e67e22;">Tentar Novamente</button>
+    </div>
+  </div>
+
+  <script>
+    const quizData = [
+      { question: "Como se diz “salão de beleza / barbearia” em inglês?", answer: "Beauty/Barber Salon", options: ["Medical Service", "Barber store", "Beauty/Barber Salon", "Hair place"] },
+      { question: "O que significa “Beach Service”?", answer: "Serviço de praia", options: ["Serviço de quarto", "Serviço de praia", "Serviço de bebidas", "Guarda-sol"] },
+      { question: "O que é “Car Rental”?", answer: "Aluguel de carros", options: ["Estacionamento", "Oficina", "Lavagem de carros", "Aluguel de carros"] },
+      { question: "Traduza “Child Care Service”:", answer: "Serviço de cuidado de crianças", options: ["Serviço de recreação", "Serviço de cuidado de crianças", "Atendimento médico infantil", "Escola para crianças"] },
+      { question: "Como se diz “Centro de Convenções” em inglês?", answer: "Convention Center", options: ["Events Square", "Convention Center", "Meeting Building", "Corporate Hall"] },
+      { question: "“Disco” em inglês se refere a:", answer: "Balada / danceteria", options: ["Loja de discos", "Balada / danceteria", "CD antigo", "Estúdio de gravação"] },
+      { question: "O que significa “Games Saloon & Games”?", answer: "Salão de jogos", options: ["Academia de jogos", "Cassino", "Salão de jogos", "Loja de brinquedos"] },
+      { question: "O que é “Handicap Access”?", answer: "Acesso para deficientes", options: ["Entrada VIP", "Entrada para funcionários", "Acesso para deficientes", "Rampa de emergência"] },
+      { question: "Traduza “Heliport”:", answer: "Heliponto", options: ["Estacionamento coberto", "Heliponto", "Torre de controle", "Hangar de aviões"] },
+      { question: "“Medical Service” quer dizer:", answer: "Atendimento médico", options: ["Atendimento médico", "Farmácia", "Seguro saúde", "Pronto-socorro"] },
+      { question: "Como se diz “cofre de segurança” em inglês?", answer: "Safe deposit box", options: ["Locker", "Strong box", "Safe deposit box", "Cash room"] },
+      { question: "O que significa “Travel Agency”?", answer: "Agência de viagens", options: ["Agência de carros", "Agência de viagens", "Agência de correios", "Agência de empregos"] },
+      { question: "Traduza “Tickets Booking Service”:", answer: "Serviço de reservas de ingressos", options: ["Venda de passagens", "Serviço de reservas de ingressos", "Serviço de táxi", "Entrega de pacotes"] },
+      { question: "“Water Sports” quer dizer:", answer: "Esportes aquáticos", options: ["Esportes aquáticos", "Bebidas tropicais", "Esportes radicais", "Equipamentos de mergulho"] },
+      { question: "Qual dos termos está relacionado a viagens de helicóptero?", answer: "Heliport", options: ["Beach Service", "Handicap Access", "Heliport", "Water Sports"] }
+    ];
+
+    let shuffledQuiz = [];
+
+    function startQuiz() {
+      document.getElementById('start-quiz-btn').style.display = 'none';
+      document.getElementById('quiz-section').style.display = 'block';
+      document.getElementById('submit-btn').style.display = 'block';
+
+      const quizContainer = document.getElementById('quiz-container');
+      quizContainer.innerHTML = '';
+
+      shuffledQuiz = [...quizData].sort(() => Math.random() - 0.5);
+
+      shuffledQuiz.forEach((item, index) => {
+        const block = document.createElement('div');
+        block.className = 'question-block';
+
+        const shuffledOptions = [...item.options].sort(() => Math.random() - 0.5);
+
+        block.innerHTML = `<p>${index + 1}. ${item.question}</p>`;
+
+        shuffledOptions.forEach(opt => {
+          block.innerHTML += `<label class="quiz-option"><input type="radio" name="q${index}" value="${opt.replace(/"/g, '"')}"> ${opt}</label>`;
+        });
+
+        quizContainer.appendChild(block);
+      });
+    }
+
+    function submitQuiz() {
+      let score = 0;
+
+      shuffledQuiz.forEach((item, index) => {
+        const selectedRadio = document.querySelector(`input[name="q${index}"]:checked`);
+        const options = document.querySelectorAll(`input[name="q${index}"]`);
+
+        options.forEach(opt => {
+          const label = opt.parentElement;
+          opt.disabled = true;
+          label.style.cursor = 'default';
+
+          if (opt.value === item.answer) {
+            label.classList.add('correct');
+          } else if (selectedRadio && opt.value === selectedRadio.value) {
+            label.classList.add('incorrect');
+          }
+        });
+
+        if (selectedRadio && selectedRadio.value === item.answer) {
+          score++;
+        }
+      });
+
+      const percentage = ((score / quizData.length) * 100).toFixed(0);
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = `Você acertou ${score} de ${quizData.length} (${percentage}%)!`;
+      resultsDiv.style.backgroundColor = percentage >= 70 ? 'var(--success-bg)' : 'var(--danger-bg)';
+      resultsDiv.style.color = percentage >= 70 ? 'var(--success-color)' : 'var(--danger-color)';
+
+      document.getElementById('submit-btn').style.display = 'none';
+      document.getElementById('retry-btn').style.display = 'inline-block';
+    }
+  </script>
+</body>
+</html>
