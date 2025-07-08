@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Master Quiz</title>
+    <style>
+        /* CSS - A APARÊNCIA DO QUIZ */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #50e3c2;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --light-gray: #f0f2f5;
+            --dark-gray: #333;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            overflow: hidden;
+        }
+
+        /* Gerenciamento de Telas */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        /* Tela de Categorias */
+        #category-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .category-card {
+            padding: 25px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .category-card:not(.locked) {
+            cursor: pointer;
+        }
+        .category-card:not(.locked):hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fa;
+            transform: translateY(-3px);
+        }
+        .category-card.locked {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            color: #6c757d;
+        }
+        .category-card.locked::after {
+            content: '🔒';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+        }
+
+        /* Tela do Quiz */
+        #quiz-progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #quiz-progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        #quiz-prompt {
+            font-size: 1.5em;
+            font-weight: 600;
+            text-align: center;
+            margin: 30px 0;
+            min-height: 50px;
+        }
+        #quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .quiz-option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            background: #fff;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .quiz-option.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .quiz-option.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        .quiz-option.disabled {
+            pointer-events: none;
+        }
+
+        /* Tela de Resultados e Tela Final */
+        .final-screen-content {
+            text-align: center;
+        }
+        .final-screen-content .trophy {
+            font-size: 6em;
+            animation: trophy-pop 0.8s ease-out;
+        }
+        @keyframes trophy-pop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #final-score {
+            font-size: 1.8em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #results-progress-bar {
+            height: 20px;
+            background-color: var(--incorrect-color);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        #results-progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--correct-color);
+            transition: width 0.5s ease-in-out;
+        }
+        #results-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .result-item.correct { background-color: #d4edda; color: #155724; }
+        .result-item.incorrect { background-color: #f8d7da; color: #721c24; }
+        .result-item span { font-weight: 600; }
+        .result-item .icon { font-size: 1.2em; }
+        
+        #results-buttons, #final-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        .button.restart {
+            background-color: var(--secondary-color);
+        }
+        #unlock-message {
+            text-align: center;
+            font-weight: 600;
+            color: var(--correct-color);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Tela 1: Seleção de Categoria -->
+    <div id="category-screen" class="screen active">
+        <h1>English Master Quiz</h1>
+        <p>Escolha uma categoria para começar.</p>
+        <div id="category-grid"></div>
+    </div>
+
+    <!-- Tela 2: Quiz -->
+    <div id="quiz-screen" class="screen">
+        <h2 id="quiz-title"></h2>
+        <div id="quiz-progress-bar-container">
+            <div id="quiz-progress-bar"></div>
+        </div>
+        <div id="quiz-prompt"></div>
+        <div id="quiz-options"></div>
+    </div>
+
+    <!-- Tela 3: Resultados -->
+    <div id="results-screen" class="screen">
+        <h2>Seu Resultado</h2>
+        <p id="final-score"></p>
+        <div id="results-progress-bar">
+            <div id="results-progress-fill"></div>
+        </div>
+        <div id="results-list"></div>
+        <div id="unlock-message"></div>
+        <div id="results-buttons"></div>
+    </div>
+    
+    <!-- Tela 4: Tela Final de Conquista -->
+    <div id="final-victory-screen" class="screen">
+        <div class="final-screen-content">
+            <div class="trophy">🏆</div>
+            <h2>Parabéns!</h2>
+            <p>Você desbloqueou e completou todas as categorias! Você é um Mestre do Inglês!</p>
+            <div id="final-buttons">
+                <button class="button restart" onclick="restartGame()">Jogar Novamente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// =================================================================
+// JAVASCRIPT - A LÓGICA COMPLETA DO QUIZ
+// =================================================================
+
+// --- DADOS DO QUIZ ---
+let quizData = [];
+
+function setupQuizData() {
+    return [
+        {
+            name: "Verb To Be (Present)",
+            locked: false,
+            questions: [
+                { prompt: "I ___ a student.", options: ["am", "is", "are", "be"], answer: "am" },
+                { prompt: "She ___ a doctor.", options: ["am", "is", "are", "be"], answer: "is" },
+                { prompt: "They ___ my friends.", options: ["am", "is", "are", "be"], answer: "are" },
+                { prompt: "He ___ tall.", options: ["am", "is", "are", "be"], answer: "is" },
+                { prompt: "You ___ very smart.", options: ["am", "is", "are", "be"], answer: "are" },
+                { prompt: "It ___ a beautiful day.", options: ["am", "is", "are", "be"], answer: "is" },
+                { prompt: "We ___ from Brazil.", options: ["am", "is", "are", "be"], answer: "are" },
+                { prompt: "___ he your brother?", options: ["Am", "Is", "Are", "Be"], answer: "Is" },
+                { prompt: "I ___ not tired.", options: ["am", "is", "are", "be"], answer: "am" },
+                { prompt: "___ they at home?", options: ["Am", "Is", "Are", "Be"], answer: "Are" }
+            ]
+        },
+        {
+            name: "Colors",
+            locked: true,
+            questions: [
+                { prompt: "A banana is...", options: ["Purple", "Yellow", "Red", "Black"], answer: "Yellow" },
+                { prompt: "A strawberry is...", options: ["White", "Orange", "Blue", "Red"], answer: "Red" },
+                { prompt: "The sky is...", options: ["Red", "Green", "Blue", "Yellow"], answer: "Blue" },
+                { prompt: "The grass is...", options: ["Green", "Black", "Pink", "Brown"], answer: "Green" },
+                { prompt: "An orange is...", options: ["Orange", "Gray", "Blue", "White"], answer: "Orange" },
+                { prompt: "Snow is...", options: ["Black", "White", "Yellow", "Purple"], answer: "White" },
+                { prompt: "A cloud can be...", options: ["Gray", "Pink", "Green", "Red"], answer: "Gray" },
+                { prompt: "A 'violet' is a flower of what color?", options: ["Violet", "Red", "Black", "Brown"], answer: "Violet" },
+                { prompt: "Chocolate is usually...", options: ["Green", "Blue", "Pink", "Brown"], answer: "Brown" },
+                { prompt: "A pig can be...", options: ["Black", "Green", "Pink", "Blue"], answer: "Pink" }
+            ]
+        },
+        {
+            name: "Numbers (up to 50)",
+            locked: true,
+            questions: [
+                { prompt: "How do you write '11'?", options: ["Ten", "Twelve", "Eleven", "One"], answer: "Eleven" },
+                { prompt: "How do you write '20'?", options: ["Twelve", "Twenty", "Thirty", "Ten"], answer: "Twenty" },
+                { prompt: "How do you write '15'?", options: ["Fifty", "Five", "Fifteen", "Fiveteen"], answer: "Fifteen" },
+                { prompt: "How do you write '33'?", options: ["Thirty-three", "Twenty-three", "Thirteen", "Three-three"], answer: "Thirty-three" },
+                { prompt: "How do you write '50'?", options: ["Fifteen", "Fivety", "Fifty", "Five-zero"], answer: "Fifty" },
+                { prompt: "What is 10 + 8?", options: ["Eighteen", "Eighty", "Eight-ten", "Ten-eight"], answer: "Eighteen" },
+                { prompt: "What is 40 - 1?", options: ["Forty-one", "Thirty", "Thirty-nine", "Fourteen"], answer: "Thirty-nine" },
+                { prompt: "Which number is 'twelve'?", options: ["2", "12", "20", "22"], answer: "12" },
+                { prompt: "Which number is 'forty-five'?", options: ["14", "54", "45", "44"], answer: "45" },
+                { prompt: "Which number is 'nineteen'?", options: ["9", "90", "19", "91"], answer: "19" }
+            ]
+        },
+        {
+            name: "The House",
+            locked: true,
+            questions: [
+                { prompt: "Where do you sleep?", options: ["Kitchen", "Bedroom", "Bathroom", "Garden"], answer: "Bedroom" },
+                { prompt: "The main entrance of a house.", options: ["Window", "Door", "Roof", "Floor"], answer: "Door" },
+                { prompt: "You use it to see outside.", options: ["Wall", "Chair", "Window", "Table"], answer: "Window" },
+                { prompt: "It covers the house.", options: ["Floor", "Roof", "Basement", "Garage"], answer: "Roof" },
+                { prompt: "Where you park your car.", options: ["Living room", "Garden", "Garage", "Attic"], answer: "Garage" },
+                { prompt: "The room to watch TV.", options: ["Bedroom", "Kitchen", "Living room", "Office"], answer: "Living room" },
+                { prompt: "The part of the house with grass and flowers.", options: ["Garden", "Bathroom", "Basement", "Pool"], answer: "Garden" },
+                { prompt: "The floor of the house.", options: ["Ceiling", "Floor", "Wall", "Stairs"], answer: "Floor" },
+                { prompt: "You use them to go up or down.", options: ["Elevator", "Window", "Door", "Stairs"], answer: "Stairs" },
+                { prompt: "The 'top' inside a room.", options: ["Ceiling", "Roof", "Attic", "Floor"], answer: "Ceiling" }
+            ]
+        },
+        {
+            name: "The Kitchen",
+            locked: true,
+            questions: [
+                { prompt: "You keep food cold in the...", options: ["Oven", "Microwave", "Fridge", "Sink"], answer: "Fridge" },
+                { prompt: "You wash dishes in the...", options: ["Stove", "Sink", "Table", "Cupboard"], answer: "Sink" },
+                { prompt: "You use it to eat soup.", options: ["Fork", "Knife", "Spoon", "Plate"], answer: "Spoon" },
+                { prompt: "You use it to cut meat.", options: ["Glass", "Spoon", "Fork", "Knife"], answer: "Knife" },
+                { prompt: "You eat on a...", options: ["Cup", "Napkin", "Plate", "Bowl"], answer: "Plate" },
+                { prompt: "You cook food on the...", options: ["Stove", "Freezer", "Dishwasher", "Chair"], answer: "Stove" },
+                { prompt: "You drink water from a...", options: ["Plate", "Glass", "Fork", "Pan"], answer: "Glass" },
+                { prompt: "You bake a cake in the...", options: ["Microwave", "Oven", "Toaster", "Blender"], answer: "Oven" },
+                { prompt: "A container for coffee or tea.", options: ["Mug", "Bottle", "Jar", "Box"], answer: "Mug" },
+                { prompt: "You use it to fry an egg.", options: ["Pot", "Pan", "Kettle", "Grill"], answer: "Pan" }
+            ]
+        },
+        {
+            name: "The Car",
+            locked: true,
+            questions: [
+                { prompt: "It makes the car move.", options: ["Wheel", "Engine", "Door", "Seat"], answer: "Engine" },
+                { prompt: "You use it to steer.", options: ["Pedal", "Gear", "Steering wheel", "Radio"], answer: "Steering wheel" },
+                { prompt: "There are four on a car.", options: ["Engines", "Roofs", "Wheels", "Seats"], answer: "Wheels" },
+                { prompt: "You sit on it.", options: ["Trunk", "Hood", "Seat", "Tire"], answer: "Seat" },
+                { prompt: "You open it to get in.", options: ["Window", "Door", "Trunk", "Light"], answer: "Door" },
+                { prompt: "It gives light at night.", options: ["Headlight", "Wiper", "Mirror", "Brake"], answer: "Headlight" },
+                { prompt: "You use it to stop the car.", options: ["Accelerator", "Clutch", "Brake", "Horn"], answer: "Brake" },
+                { prompt: "The glass in front of the driver.", options: ["Windshield", "Sunroof", "Side mirror", "Bumper"], answer: "Windshield" },
+                { prompt: "You put luggage in the...", options: ["Glove box", "Hood", "Trunk", "Console"], answer: "Trunk" },
+                { prompt: "The rubber part of the wheel.", options: ["Rim", "Hubcap", "Axle", "Tire"], answer: "Tire" }
+            ]
+        },
+        {
+            name: "For Uber/Taxi Drivers",
+            locked: true,
+            questions: [
+                { prompt: "The person who takes the ride.", options: ["Driver", "Passenger", "Pilot", "Captain"], answer: "Passenger" },
+                { prompt: "The final place of the trip.", options: ["Start", "Route", "Destination", "Map"], answer: "Destination" },
+                { prompt: "The money you earn.", options: ["Fare", "Tip", "Fee", "Cost"], answer: "Fare" },
+                { prompt: "The path you take.", options: ["Road", "Route", "Street", "Highway"], answer: "Route" },
+                { prompt: "A device that shows the map.", options: ["Radio", "Phone", "GPS", "Compass"], answer: "GPS" },
+                { prompt: "A request for a ride.", options: ["Call", "Booking", "Message", "Alert"], answer: "Booking" },
+                { prompt: "Extra money for good service.", options: ["Bonus", "Tip", "Fare", "Tax"], answer: "Tip" },
+                { prompt: "A period with many requests.", options: ["Rush hour", "Slow time", "Break", "Holiday"], answer: "Rush hour" },
+                { prompt: "The evaluation of a driver or passenger.", options: ["Comment", "Review", "Rating", "Grade"], answer: "Rating" },
+                { prompt: "The application used for the service.", options: ["Game", "App", "Program", "Website"], answer: "App" }
+            ]
+        },
+        {
+            name: "The Restaurant",
+            locked: true,
+            questions: [
+                { prompt: "The person who serves you.", options: ["Chef", "Waiter", "Manager", "Host"], answer: "Waiter" },
+                { prompt: "The list of food and drinks.", options: ["Book", "Menu", "Card", "List"], answer: "Menu" },
+                { prompt: "The person who cooks.", options: ["Chef", "Baker", "Server", "Owner"], answer: "Chef" },
+                { prompt: "The final payment.", options: ["Order", "Tip", "Bill", "Recipe"], answer: "Bill" },
+                { prompt: "The main food of a meal.", options: ["Dessert", "Appetizer", "Main course", "Drink"], answer: "Main course" },
+                { prompt: "A small dish before the main course.", options: ["Starter", "Side", "Snack", "Sweet"], answer: "Starter" },
+                { prompt: "Something sweet after the meal.", options: ["Dessert", "Fruit", "Candy", "Sugar"], answer: "Dessert" },
+                { prompt: "To ask for food.", options: ["To pay", "To book", "To order", "To eat"], answer: "To order" },
+                { prompt: "To reserve a table.", options: ["A booking", "A call", "A visit", "A plan"], answer: "A booking" },
+                { prompt: "The area where food is prepared.", options: ["Dining room", "Bar", "Kitchen", "Office"], answer: "Kitchen" }
+            ]
+        },
+    ];
+}
+
+// --- VARIÁVEIS DE ESTADO DO JOGO ---
+let currentCategoryIndex;
+let currentQuestionIndex;
+let score;
+let quizQuestions; 
+let questionsToRetry = [];
+
+// --- REFERÊNCIAS AOS ELEMENTOS DO DOM ---
+const categoryScreen = document.getElementById('category-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultsScreen = document.getElementById('results-screen');
+const finalVictoryScreen = document.getElementById('final-victory-screen');
+
+const categoryGrid = document.getElementById('category-grid');
+const quizTitle = document.getElementById('quiz-title');
+const quizProgressBar = document.getElementById('quiz-progress-bar');
+const quizPrompt = document.getElementById('quiz-prompt');
+const quizOptions = document.getElementById('quiz-options');
+const finalScore = document.getElementById('final-score');
+const resultsProgressBar = document.getElementById('results-progress-fill');
+const resultsList = document.getElementById('results-list');
+const unlockMessage = document.getElementById('unlock-message');
+const resultsButtons = document.getElementById('results-buttons');
+
+// --- FUNÇÕES DO JOGO ---
+
+function showScreen(screen) {
+    [categoryScreen, quizScreen, resultsScreen, finalVictoryScreen].forEach(s => s.classList.remove('active'));
+    screen.classList.add('active');
+}
+
+function renderCategories() {
+    categoryGrid.innerHTML = '';
+    quizData.forEach((category, index) => {
+        const card = document.createElement('div');
+        card.textContent = category.name;
+        card.className = 'category-card';
+        if (category.locked) {
+            card.classList.add('locked');
+        } else {
+            card.onclick = () => startQuiz(index);
+        }
+        categoryGrid.appendChild(card);
+    });
+}
+
+function startQuiz(categoryIndex, isRetry = false) {
+    currentCategoryIndex = categoryIndex;
+    currentQuestionIndex = 0;
+    score = 0;
+
+    if (isRetry) {
+        quizQuestions = [...questionsToRetry];
+    } else {
+        quizQuestions = quizData[currentCategoryIndex].questions;
+    }
+    
+    questionsToRetry = [];
+
+    quizTitle.textContent = quizData[currentCategoryIndex].name;
+    showScreen(quizScreen);
+    displayQuestion();
+}
+
+function displayQuestion() {
+    if (currentQuestionIndex >= quizQuestions.length) {
+        showResults();
+        return;
+    }
+
+    const progress = ((currentQuestionIndex) / quizQuestions.length) * 100;
+    quizProgressBar.style.width = `${progress}%`;
+
+    const question = quizQuestions[currentQuestionIndex];
+    quizPrompt.textContent = question.prompt;
+    quizOptions.innerHTML = '';
+
+    const shuffledOptions = [...question.options].sort(() => Math.random() - 0.5);
+
+    shuffledOptions.forEach(optionText => {
+        const optionElement = document.createElement('button');
+        optionElement.className = 'quiz-option';
+        optionElement.textContent = optionText;
+        optionElement.onclick = () => checkAnswer(optionElement, optionText, question.answer);
+        quizOptions.appendChild(optionElement);
+    });
+}
+
+function checkAnswer(selectedElement, selectedAnswer, correctAnswer) {
+    document.querySelectorAll('.quiz-option').forEach(btn => btn.classList.add('disabled'));
+
+    if (selectedAnswer === correctAnswer) {
+        selectedElement.classList.add('correct');
+        score++;
+    } else {
+        selectedElement.classList.add('incorrect');
+        questionsToRetry.push(quizQuestions[currentQuestionIndex]);
+        document.querySelectorAll('.quiz-option').forEach(btn => {
+            if (btn.textContent === correctAnswer) {
+                btn.classList.add('correct');
+            }
+        });
+    }
+
+    setTimeout(() => {
+        currentQuestionIndex++;
+        displayQuestion();
+    }, 1500);
+}
+
+function showResults() {
+    showScreen(resultsScreen);
+
+    const totalQuestions = quizQuestions.length;
+    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
+    finalScore.textContent = `Você acertou ${score} de ${totalQuestions}!`;
+    resultsProgressBar.style.width = `${percentage}%`;
+
+    resultsList.innerHTML = '';
+    quizQuestions.forEach(q => {
+        const wasCorrect = !questionsToRetry.some(retryQ => retryQ.prompt === q.prompt);
+        const item = document.createElement('div');
+        item.className = wasCorrect ? 'result-item correct' : 'result-item incorrect';
+        item.innerHTML = `<span>${q.prompt}</span><span class="icon">${wasCorrect ? '✔️' : '❌'}</span>`;
+        resultsList.appendChild(item);
+    });
+
+    resultsButtons.innerHTML = '';
+    unlockMessage.textContent = '';
+    
+    if (questionsToRetry.length > 0) {
+        const retryButton = document.createElement('button');
+        retryButton.className = 'button secondary';
+        retryButton.textContent = `Repetir ${questionsToRetry.length} erradas`;
+        retryButton.onclick = () => startQuiz(currentCategoryIndex, true);
+        resultsButtons.appendChild(retryButton);
+    } else {
+        const nextCategoryIndex = currentCategoryIndex + 1;
+        if (nextCategoryIndex < quizData.length) {
+            if (quizData[nextCategoryIndex].locked) {
+                quizData[nextCategoryIndex].locked = false;
+                unlockMessage.textContent = 'Parabéns! Você desbloqueou a próxima categoria!';
+            } else {
+                unlockMessage.textContent = 'Parabéns! Você dominou esta categoria!';
+            }
+        } else {
+            // Se esta é a última categoria
+            setTimeout(() => showFinalVictory(), 1000); // Mostra a tela final após 1 segundo
+            return;
+        }
+    }
+
+    const menuButton = document.createElement('button');
+    menuButton.className = 'button';
+    menuButton.textContent = 'Voltar ao Menu';
+    menuButton.onclick = () => {
+        renderCategories();
+        showScreen(categoryScreen);
+    };
+    resultsButtons.appendChild(menuButton);
+}
+
+function showFinalVictory() {
+    showScreen(finalVictoryScreen);
+}
+
+function restartGame() {
+    quizData = setupQuizData(); // Reseta os dados para o estado inicial
+    renderCategories();
+    showScreen(categoryScreen);
+}
+
+// --- INICIALIZAÇÃO DO APP ---
+window.onload = () => {
+    quizData = setupQuizData();
+    renderCategories();
+    showScreen(categoryScreen);
+};
+
+</script>
+
+</body>
+</html>
