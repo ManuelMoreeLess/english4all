@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz de Teoria Musical</title>
+    <style>
+        /* CSS - A APARÊNCIA DO QUIZ (Mesmo layout, cores e fontes) */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+        :root {
+            --primary-color: #6a1b9a; /* Roxo para um tema musical */
+            --secondary-color: #fdd835; /* Amarelo para contraste */
+            --correct-color: #2e7d32;
+            --incorrect-color: #c62828;
+            --light-gray: #f5f5f5;
+            --dark-gray: #212121;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            overflow: hidden;
+        }
+
+        /* Gerenciamento de Telas */
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        /* Tela de Categorias */
+        #category-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .category-card {
+            padding: 25px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .category-card:not(.locked) {
+            cursor: pointer;
+        }
+        .category-card:not(.locked):hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fa;
+            transform: translateY(-3px);
+        }
+        .category-card.locked {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            color: #6c757d;
+        }
+        .category-card.locked::after {
+            content: '🔒';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5em;
+        }
+
+        /* Tela do Quiz */
+        #quiz-progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #quiz-progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        #quiz-prompt {
+            font-size: 1.5em;
+            font-weight: 600;
+            text-align: center;
+            margin: 30px 0;
+            min-height: 50px;
+        }
+        #quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .quiz-option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            background: #fff;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        .quiz-option.correct {
+            background-color: var(--correct-color);
+            color: white;
+            border-color: var(--correct-color);
+        }
+        .quiz-option.incorrect {
+            background-color: var(--incorrect-color);
+            color: white;
+            border-color: var(--incorrect-color);
+        }
+        .quiz-option.disabled {
+            pointer-events: none;
+        }
+
+        /* Tela de Resultados e Tela Final */
+        .final-screen-content {
+            text-align: center;
+        }
+        .final-screen-content .trophy {
+            font-size: 6em;
+            animation: trophy-pop 0.8s ease-out;
+        }
+        @keyframes trophy-pop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #final-score {
+            font-size: 1.8em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #results-progress-bar {
+            height: 20px;
+            background-color: var(--incorrect-color);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        #results-progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--correct-color);
+            transition: width 0.5s ease-in-out;
+        }
+        #results-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .result-item.correct { background-color: #d4edda; color: #155724; }
+        .result-item.incorrect { background-color: #f8d7da; color: #721c24; }
+        .result-item span { font-weight: 600; }
+        .result-item .icon { font-size: 1.2em; }
+        
+        #results-buttons, #final-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        .button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        .button.restart {
+            background-color: var(--secondary-color);
+            color: var(--dark-gray);
+        }
+        #unlock-message {
+            text-align: center;
+            font-weight: 600;
+            color: var(--correct-color);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Tela 1: Seleção de Categoria -->
+    <div id="category-screen" class="screen active">
+        <h1>🎼 Quiz de Teoria Musical</h1>
+        <p>Do Básico ao Intermediário</p>
+        <div id="category-grid"></div>
+    </div>
+
+    <!-- Tela 2: Quiz -->
+    <div id="quiz-screen" class="screen">
+        <h2 id="quiz-title"></h2>
+        <div id="quiz-progress-bar-container">
+            <div id="quiz-progress-bar"></div>
+        </div>
+        <div id="quiz-prompt"></div>
+        <div id="quiz-options"></div>
+    </div>
+
+    <!-- Tela 3: Resultados -->
+    <div id="results-screen" class="screen">
+        <h2>Seu Resultado</h2>
+        <p id="final-score"></p>
+        <div id="results-progress-bar">
+            <div id="results-progress-fill"></div>
+        </div>
+        <div id="results-list"></div>
+        <div id="unlock-message"></div>
+        <div id="results-buttons"></div>
+    </div>
+    
+    <!-- Tela 4: Tela Final de Conquista -->
+    <div id="final-victory-screen" class="screen">
+        <div class="final-screen-content">
+            <div class="trophy">🏆</div>
+            <h2>Parabéns, Maestro!</h2>
+            <p>Você completou todos os desafios e dominou a teoria musical. Continue praticando!</p>
+            <div id="final-buttons">
+                <button class="button restart" onclick="restartGame()">Revisar Tópicos</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// =================================================================
+// JAVASCRIPT - A LÓGICA COMPLETA DO QUIZ
+// =================================================================
+
+// --- DADOS DO QUIZ ---
+let quizData = [];
+
+function setupQuizData() {
+    return [
+        {
+            name: "Claves, Pentagrama e Notação",
+            locked: false,
+            questions: [
+                { prompt: "Quantas linhas tem o pentagrama?", options: ["4", "5", "6", "7"], answer: "5" },
+                { prompt: "Quantos espaços existem no pentagrama?", options: ["3", "4", "5", "6"], answer: "4" },
+                { prompt: "Qual é a clave mais utilizada para instrumentos agudos?", options: ["Fá", "Dó", "Sol", "Tenor"], answer: "Sol" },
+                { prompt: "Quais são as notas das linhas na clave de Sol? (de baixo para cima)", options: ["E G B D F", "C E G B D", "F A C E G", "G B D F A"], answer: "E G B D F" },
+                { prompt: "Quais são as notas dos espaços na clave de Sol? (de baixo para cima)", options: ["F A C E", "E G A D", "G B D F", "A C E D"], answer: "F A C E" },
+                { prompt: "Qual destas claves é usada para vozes e instrumentos graves?", options: ["Clave de Sol", "Clave de Fá", "Clave de Dó", "Clave de Soprano"], answer: "Clave de Fá" },
+                { prompt: "Qual nota está na 2ª linha do pentagrama na clave de Sol?", options: ["D", "G", "F", "E"], answer: "G" },
+                { prompt: "Qual o nome da figura que representa uma pausa de 4 tempos?", options: ["Semínima", "Colcheia", "Semibreve", "Pausa de Semibreve"], answer: "Pausa de Semibreve" },
+                { prompt: "O que representa a clave no início do pentagrama?", options: ["A velocidade da música", "A altura das notas", "O ritmo", "A intensidade"], answer: "A altura das notas" },
+                { prompt: "Qual dessas figuras representa uma nota com duração de 2 tempos?", options: ["Colcheia", "Semibreve", "Mínima", "Semínima"], answer: "Mínima" }
+            ]
+        },
+        {
+            name: "Campo Harmônico Maior",
+            locked: true,
+            questions: [
+                { prompt: "Quais são os acordes do campo harmônico maior de C?", options: ["C, D, E, F, G, A, B", "Cmaj, Dmaj, Emaj, Fmaj...", "C, Dm, Em, F, G, Am, B°", "Cm, D°, Eb..."], answer: "C, Dm, Em, F, G, Am, B°" },
+                { prompt: "Qual é o III grau do campo harmônico de C?", options: ["E", "Em", "F", "Dm"], answer: "Em" },
+                { prompt: "O IV grau do campo harmônico de G é:", options: ["D", "F", "C", "Gm"], answer: "C" },
+                { prompt: "O VI grau do campo harmônico de E é:", options: ["C#m", "F#m", "G#m", "Am"], answer: "C#m" },
+                { prompt: "Qual é o VII grau do campo harmônico de D?", options: ["A", "C#°", "Bm", "F#m"], answer: "C#°" },
+                { prompt: "Em qual tom o acorde Dm é o II grau?", options: ["C", "D", "G", "F"], answer: "C" },
+                { prompt: "Qual desses acordes NÃO pertence ao campo harmônico de F?", options: ["Bb", "Gm", "Dm", "Bm"], answer: "Bm" },
+                { prompt: "O campo harmônico maior de A contém qual acorde no IV grau?", options: ["D", "C#m", "F#m", "E"], answer: "D" },
+                { prompt: "Qual é a função harmônica do acorde G no campo harmônico de C?", options: ["Tônica", "Subdominante", "Dominante", "Mediante"], answer: "Dominante" },
+                { prompt: "O II grau do campo harmônico de B é:", options: ["C#m", "D#m", "F#m", "G#m"], answer: "C#m" }
+            ]
+        },
+        {
+            name: "Ciclo de Quintas e Quartas",
+            locked: true,
+            questions: [
+                { prompt: "Quantos semitons tem uma escala cromática completa?", options: ["7", "10", "12", "8"], answer: "12" },
+                { prompt: "Qual é o próximo tom no ciclo de quintas após C?", options: ["F", "G", "A", "D"], answer: "G" },
+                { prompt: "Qual é o próximo tom no ciclo de quartas após C?", options: ["G", "A", "F", "E"], answer: "F" },
+                { prompt: "Quantos sustenidos tem a tonalidade de E maior?", options: ["2", "3", "4", "5"], answer: "4" },
+                { prompt: "Qual é a ordem dos sustenidos?", options: ["F# C# G# D# A# E# B#", "B E A D G C F", "F G A B C D E", "C G D A E B F#"], answer: "F# C# G# D# A# E# B#" },
+                { prompt: "Qual é a tonalidade com 3 sustenidos?", options: ["A maior", "G maior", "E maior", "D maior"], answer: "A maior" },
+                { prompt: "Qual é a tonalidade com 2 bemóis?", options: ["F maior", "Bb maior", "Eb maior", "G menor"], answer: "Bb maior" },
+                { prompt: "Qual é a ordem dos bemóis?", options: ["F C G D A E B", "B E A D G C F", "Bb Eb Ab Db Gb Cb Fb", "G D A E B F# C#"], answer: "Bb Eb Ab Db Gb Cb Fb" },
+                { prompt: "Qual tonalidade tem 6 sustenidos?", options: ["B maior", "F# maior", "C# maior", "G# maior"], answer: "F# maior" },
+                { prompt: "A tonalidade relativa menor de D maior é:", options: ["Dm", "Bm", "Am", "F#m"], answer: "Bm" }
+            ]
+        },
+        {
+            name: "Escala Menor Harmônica",
+            locked: true,
+            questions: [
+                { prompt: "Qual a principal característica da escala menor harmônica?", options: ["A 3ª é maior", "A 6ª é aumentada", "A 7ª é maior", "A 5ª é diminuta"], answer: "A 7ª é maior" },
+                { prompt: "Qual a fórmula de tons/semitons da escala menor harmônica?", options: ["T-S-T-T-S-T-T", "T-S-T-T-S-(T+S)-S", "T-T-S-T-T-T-S", "T-S-T-T-T-S-T"], answer: "T-S-T-T-S-(T+S)-S" },
+                { prompt: "Quais as notas da escala de A menor harmônica?", options: ["A-B-C-D-E-F-G", "A-B-C-D-E-F-G#", "A-B-C-D-E-F#-G", "A-B-C#-D-E-F-G"], answer: "A-B-C-D-E-F-G#" },
+                { prompt: "Qual acorde é formado sobre o V grau da escala menor harmônica?", options: ["Menor", "Diminuto", "Maior", "Dominante"], answer: "Dominante" },
+                { prompt: "O acorde do VII grau da escala menor harmônica é:", options: ["maior com 7ª", "meio-diminuto", "diminuto", "menor com 7ª"], answer: "diminuto" },
+                { prompt: "Qual é o acorde do III grau da escala de A menor harmônica?", options: ["C", "C#dim", "Cmaj7(#5)", "Cm"], answer: "Cmaj7(#5)" },
+                { prompt: "O IV grau da escala menor harmônica forma qual tipo de acorde?", options: ["menor", "maior", "diminuto", "aumentado"], answer: "menor" },
+                { prompt: "Como se classifica o acorde formado no II grau da escala menor harmônica?", options: ["menor", "maior", "diminuto", "aumentado"], answer: "diminuto" },
+                { prompt: "Qual outro nome é chamada a escala menor harmônica, principalmente na Espanha?", options: ["Espanhola", "Flamenca", "Árabe", "Indiana"], answer: "Árabe" },
+                { prompt: "Qual destes acordes é a tônica da escala menor harmônica de C?", options: ["G7", "E7", "Dm7", "C-(maj7)"], answer: "C-(maj7)" }
+            ]
+        },
+        {
+            name: "Escala Menor Melódica e Tétrades",
+            locked: true,
+            questions: [
+                { prompt: "Qual a principal característica da escala menor melódica ascendente?", options: ["6ª e 7ª maiores", "3ª maior", "5ª aumentada", "2ª diminuta"], answer: "6ª e 7ª maiores" },
+                { prompt: "Quais as notas da escala de A menor melódica (subida)?", options: ["A-B-C-D-E-F-G", "A-B-C-D-E-F#-G#", "A-C-D-E-F-G-A", "A-B-C-D-E-G-A"], answer: "A-B-C-D-E-F#-G#" },
+                { prompt: "A escala menor melódica descendente na forma clássica é igual a:", options: ["maior", "harmônica", "menor natural", "aumentada"], answer: "menor natural" },
+                { prompt: "Qual acorde é formado no I grau da escala menor melódica?", options: ["Menor", "Menor com 7ª maior (mMaj7)", "Maior", "Menor com 7ª menor"], answer: "Menor com 7ª maior (mMaj7)" },
+                { prompt: "O IV grau da escala menor melódica forma um acorde:", options: ["Menor", "Maior", "Dominante", "Maj7(#11)"], answer: "Dominante" }, // Nota: A resposta correta seria V7(#4), Dominante. Adaptei a sua opção
+                { prompt: "Qual a tétrade formada sobre o V grau da escala de A menor melódica?", options: ["Em", "E7(b9,b13)", "E7(#9)", "E7"], answer: "E7(b9,b13)" }, // Simplifiquei para a tétrade básica
+                { prompt: "O III grau da escala menor melódica forma qual tipo de tétrade?", options: ["Maior com 7ª", "Menor com 7ª", "Maior com 7ª aumentada (#5)", "Diminuto com 7ª"], answer: "Maior com 7ª aumentada (#5)" },
+                { prompt: "Um acorde tétrade é composto por:", options: ["Tríade + 5ª aumentada", "Tríade + 6ª", "Tríade + 7ª", "Quatro notas aleatórias"], answer: "Tríade + 7ª" },
+                { prompt: "Qual destas tétrades pertence à escala de A menor melódica?", options: ["Dm", "BMaj7", "G#ø7 (meio-diminuto)", "Fmaj7"], answer: "G#ø7 (meio-diminuto)" },
+                { prompt: "O II grau da escala menor melódica forma um acorde:", options: ["Menor com 7ª", "Maior com 7ª", "Dominante", "Meio-diminuto"], answer: "Menor com 7ª" }
+            ]
+        },
+        {
+            name: "Dominantes Secundários",
+            locked: true,
+            questions: [
+                { prompt: "O que é um dominante secundário?", options: ["Um acorde diminuto", "Um acorde menor substituto", "Um acorde dominante que prepara outro grau", "Um acorde do modo menor"], answer: "Um acorde dominante que prepara outro grau" },
+                { prompt: "Qual a função do acorde dominante secundário?", options: ["Estabilizar a tonalidade", "Introduzir modulação", "Preparar um acorde como tônica temporária", "Aumentar o ritmo"], answer: "Preparar um acorde como tônica temporária" },
+                { prompt: "Como é representado o dominante secundário do II grau?", options: ["V/II", "II/V", "IV/V", "V7/IV"], answer: "V/II" },
+                { prompt: "Qual o dominante secundário do acorde Dm (em C maior)?", options: ["A7", "D7", "E7", "G7"], answer: "A7" },
+                { prompt: "Qual o acorde V/vi em Dó maior?", options: ["C7", "D7", "E7", "A7"], answer: "E7" },
+                { prompt: "O acorde G7 é o dominante primário de qual acorde em C maior?", options: ["Dm", "C", "F", "Am"], answer: "C" },
+                { prompt: "Em C maior, qual destes é um dominante secundário?", options: ["F7", "D7", "Em7", "Am7"], answer: "D7" },
+                { prompt: "Um dominante secundário geralmente é um acorde:", options: ["Menor", "Diminuto", "Aumentado", "Maior com sétima menor (V7)"], answer: "Maior com sétima menor (V7)" },
+                { prompt: "Qual destes acordes é o V/IV em C maior?", options: ["G7", "Bb7", "C7", "F7"], answer: "C7" },
+                { prompt: "O acorde B7, em C maior, é considerado:", options: ["Acorde do campo harmônico", "Dominante secundário de Em", "Subdominante", "Acorde diminuto"], answer: "Dominante secundário de Em" }
+            ]
+        }
+    ];
+}
+
+// --- VARIÁVEIS DE ESTADO DO JOGO ---
+let currentCategoryIndex;
+let currentQuestionIndex;
+let score;
+let quizQuestions; 
+let questionsToRetry = [];
+
+// --- REFERÊNCIAS AOS ELEMENTOS DO DOM ---
+const categoryScreen = document.getElementById('category-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultsScreen = document.getElementById('results-screen');
+const finalVictoryScreen = document.getElementById('final-victory-screen');
+
+const categoryGrid = document.getElementById('category-grid');
+const quizTitle = document.getElementById('quiz-title');
+const quizProgressBar = document.getElementById('quiz-progress-bar');
+const quizPrompt = document.getElementById('quiz-prompt');
+const quizOptions = document.getElementById('quiz-options');
+const finalScore = document.getElementById('final-score');
+const resultsProgressBar = document.getElementById('results-progress-fill');
+const resultsList = document.getElementById('results-list');
+const unlockMessage = document.getElementById('unlock-message');
+const resultsButtons = document.getElementById('results-buttons');
+
+// --- FUNÇÕES DO JOGO ---
+
+function showScreen(screen) {
+    [categoryScreen, quizScreen, resultsScreen, finalVictoryScreen].forEach(s => s.classList.remove('active'));
+    screen.classList.add('active');
+}
+
+function renderCategories() {
+    categoryGrid.innerHTML = '';
+    quizData.forEach((category, index) => {
+        const card = document.createElement('div');
+        card.textContent = category.name;
+        card.className = 'category-card';
+        if (category.locked) {
+            card.classList.add('locked');
+        } else {
+            card.onclick = () => startQuiz(index);
+        }
+        categoryGrid.appendChild(card);
+    });
+}
+
+function startQuiz(categoryIndex, isRetry = false) {
+    currentCategoryIndex = categoryIndex;
+    currentQuestionIndex = 0;
+    score = 0;
+
+    if (isRetry) {
+        quizQuestions = [...questionsToRetry];
+    } else {
+        quizQuestions = quizData[currentCategoryIndex].questions;
+    }
+    
+    questionsToRetry = [];
+
+    quizTitle.textContent = quizData[currentCategoryIndex].name;
+    showScreen(quizScreen);
+    displayQuestion();
+}
+
+function displayQuestion() {
+    if (currentQuestionIndex >= quizQuestions.length) {
+        showResults();
+        return;
+    }
+
+    const progress = ((currentQuestionIndex) / quizQuestions.length) * 100;
+    quizProgressBar.style.width = `${progress}%`;
+
+    const question = quizQuestions[currentQuestionIndex];
+    quizPrompt.textContent = question.prompt;
+    quizOptions.innerHTML = '';
+
+    const shuffledOptions = [...question.options].sort(() => Math.random() - 0.5);
+
+    shuffledOptions.forEach(optionText => {
+        const optionElement = document.createElement('button');
+        optionElement.className = 'quiz-option';
+        optionElement.textContent = optionText;
+        optionElement.onclick = () => checkAnswer(optionElement, optionText, question.answer);
+        quizOptions.appendChild(optionElement);
+    });
+}
+
+function checkAnswer(selectedElement, selectedAnswer, correctAnswer) {
+    document.querySelectorAll('.quiz-option').forEach(btn => btn.classList.add('disabled'));
+
+    if (selectedAnswer === correctAnswer) {
+        selectedElement.classList.add('correct');
+        score++;
+    } else {
+        selectedElement.classList.add('incorrect');
+        questionsToRetry.push(quizQuestions[currentQuestionIndex]);
+        document.querySelectorAll('.quiz-option').forEach(btn => {
+            if (btn.textContent === correctAnswer) {
+                btn.classList.add('correct');
+            }
+        });
+    }
+
+    setTimeout(() => {
+        currentQuestionIndex++;
+        displayQuestion();
+    }, 1500);
+}
+
+function showResults() {
+    showScreen(resultsScreen);
+
+    const totalQuestions = quizQuestions.length;
+    const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+
+    finalScore.textContent = `Você acertou ${score} de ${totalQuestions}!`;
+    resultsProgressBar.style.width = `${percentage}%`;
+
+    resultsList.innerHTML = '';
+    quizQuestions.forEach(q => {
+        const wasCorrect = !questionsToRetry.some(retryQ => retryQ.prompt === q.prompt);
+        const item = document.createElement('div');
+        item.className = wasCorrect ? 'result-item correct' : 'result-item incorrect';
+        item.innerHTML = `<span>${q.prompt}</span><span class="icon">${wasCorrect ? '✔️' : '❌'}</span>`;
+        resultsList.appendChild(item);
+    });
+
+    resultsButtons.innerHTML = '';
+    unlockMessage.textContent = '';
+    
+    if (questionsToRetry.length > 0) {
+        const retryButton = document.createElement('button');
+        retryButton.className = 'button secondary';
+        retryButton.textContent = `Repetir ${questionsToRetry.length} erradas`;
+        retryButton.onclick = () => startQuiz(currentCategoryIndex, true);
+        resultsButtons.appendChild(retryButton);
+    } else {
+        const nextCategoryIndex = currentCategoryIndex + 1;
+        if (nextCategoryIndex < quizData.length) {
+            if (quizData[nextCategoryIndex].locked) {
+                quizData[nextCategoryIndex].locked = false;
+                unlockMessage.textContent = 'Parabéns! Você desbloqueou o próximo tópico!';
+            } else {
+                unlockMessage.textContent = 'Parabéns! Você dominou este tópico!';
+            }
+        } else {
+            // Se esta é a última categoria
+            setTimeout(() => showFinalVictory(), 1000); // Mostra a tela final após 1 segundo
+            return;
+        }
+    }
+
+    const menuButton = document.createElement('button');
+    menuButton.className = 'button';
+    menuButton.textContent = 'Voltar aos Tópicos';
+    menuButton.onclick = () => {
+        renderCategories();
+        showScreen(categoryScreen);
+    };
+    resultsButtons.appendChild(menuButton);
+}
+
+function showFinalVictory() {
+    showScreen(finalVictoryScreen);
+}
+
+function restartGame() {
+    quizData = setupQuizData(); // Reseta os dados para o estado inicial
+    renderCategories();
+    showScreen(categoryScreen);
+}
+
+// --- INICIALIZAÇÃO DO APP ---
+window.onload = () => {
+    quizData = setupQuizData();
+    renderCategories();
+    showScreen(categoryScreen);
+};
+
+</script>
+
+</body>
+</html>
