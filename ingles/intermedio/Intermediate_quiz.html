@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Quiz: History of the Internet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d3b66;
+            --secondary-color: #faf0ca;
+            --background-color: #f4f4f9;
+            --text-color: #333;
+            --correct-color: #28a745;
+            --incorrect-color: #dc3545;
+            --light-gray: #e9ecef;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #main-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 850px;
+            text-align: center;
+        }
+
+        /* --- Start Screen --- */
+        #start-screen h1 {
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        #intro-text {
+            text-align: left;
+            font-size: 1.05em;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary-color);
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(45deg, #1e5799, #2989d8);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        /* --- Quiz Screen --- */
+        #quiz-screen {
+            display: none;
+        }
+
+        #quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        #quiz-header h2 {
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        #timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            background-color: var(--incorrect-color);
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+
+        .question {
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .question p {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .options label {
+            display: block;
+            margin-bottom: 12px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid var(--light-gray);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .options label:hover {
+            border-color: var(--primary-color);
+            background-color: #fcfcfd;
+        }
+        
+        input[type="radio"] {
+            display: none; /* Hide the default radio button */
+        }
+        
+        input[type="radio"] + span {
+            margin-left: 10px;
+        }
+        
+        input[type="radio"]:checked + span {
+            font-weight: 600;
+        }
+
+        /* Custom radio button */
+        .options label .radio-custom {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            margin-right: 15px;
+            vertical-align: middle;
+            transition: all 0.2s;
+        }
+
+        input[type="radio"]:checked + .radio-custom {
+            border-color: var(--primary-color);
+            background-color: var(--primary-color);
+            box-shadow: 0 0 0 3px white inset;
+        }
+
+        #submit-btn {
+            width: 100%;
+        }
+        
+        #submit-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .correct {
+            background-color: #e9f7ec !important;
+            border-color: var(--correct-color) !important;
+            color: #1e4620;
+            font-weight: bold;
+        }
+
+        .incorrect {
+            background-color: #fde_de !important;
+            border-color: var(--incorrect-color) !important;
+            color: #58151c;
+            font-weight: bold;
+        }
+
+        #results {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 8px;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+            background-color: var(--light-gray);
+            border-top: 5px solid var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="main-container">
+        <!-- START SCREEN -->
+        <div id="start-screen">
+            <h1>The Genesis of the Internet</h1>
+            <div id="intro-text">
+         The Internet, a global network of interconnected computers, has its roots in the 1960s as a project of the United States government's Advanced Research Projects Agency (ARPA). The project, known as ARPANET, was initially designed to create a resilient and decentralized communication network that could withstand a nuclear attack. The first successful message was sent over ARPANET on October 29, 1969, between UCLA and the Stanford Research Institute. Throughout the 1970s and 1980s, the network grew, primarily connecting universities and research institutions. A significant milestone was the development of the TCP/IP (Transmission Control Protocol/Internet Protocol) in the early 1980s, which became the standard protocol for the Internet and allowed different types of networks to connect. The 1990s marked the dawn of the public, commercial Internet. A key invention was the World Wide Web, developed by Tim Berners-Lee at CERN in 1990. He created the first web browser, web server, and the fundamental technologies: HTML, URL, and HTTP. This made the Internet vastly more accessible to the general public. In 1993, the Mosaic web browser was released, which was the first browser to display images inline with text, sparking a massive surge in the Internet's popularity. By the mid-1990s, companies like Netscape and later Microsoft, with Internet Explorer, brought the web to millions of households worldwide. The term for this era is often called the 'Dot-com boom'.
+            </div>
+            <button id="start-btn" class="btn">Start The Quiz</button>
+        </div>
+
+        <!-- QUIZ SCREEN -->
+        <div id="quiz-screen">
+            <div id="quiz-header">
+                <h2>Internet History Quiz</h2>
+                <div id="timer">05:00</div>
+            </div>
+            <form id="quiz-form">
+                <!-- Questions will be dynamically inserted here by JavaScript -->
+            </form>
+            <button id="submit-btn" class="btn">Submit Answers</button>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const quizData = [
+                {
+                    question: "What was the primary geopolitical motivation behind the creation of ARPANET?",
+                    options: [
+                        "To foster international scientific collaboration.",
+                        "To create a decentralized communication network resilient to nuclear attack.",
+                        "To establish a new medium for electronic commerce.",
+                        "To promote global freedom of speech."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "The adoption of the TCP/IP protocol suite in the early 1980s was a critical turning point. What was its most significant contribution?",
+                    options: [
+                        "It dramatically increased connection speeds for home users.",
+                        "It enabled the creation of the World Wide Web by Tim Berners-Lee.",
+                        "It standardized communication, allowing disparate network types to interconnect seamlessly.",
+                        "It introduced the concept of domain names (like .com)."
+                    ],
+                    answer: 2
+                },
+                {
+                    question: "Tim Berners-Lee is credited with inventing the World Wide Web. Which of the following technologies was NOT one of his foundational creations in 1990?",
+                    options: [
+                        "HTML (HyperText Markup Language)",
+                        "URL (Uniform Resource Locator)",
+                        "HTTP (HyperText Transfer Protocol)",
+                        "The first graphical browser to display images inline with text."
+                    ],
+                    answer: 3
+                },
+                {
+                    question: "The Mosaic web browser, released in 1993, is often cited as the 'spark' for the Internet's mass adoption. What was its most revolutionary feature at the time?",
+                    options: [
+                        "It was the very first web browser ever created.",
+                        "Its ability to display images inline with text, rather than in separate windows.",
+                        "It was the first to implement the TCP/IP protocol.",
+                        "It was developed and distributed by Microsoft."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "Decentralization was a core principle of ARPANET. How is this concept reflected in the architecture of today's Internet?",
+                    options: [
+                        "A single corporation controls all global data flow.",
+                        "The network consists of countless interconnected, autonomous networks, lacking a single point of failure.",
+                        "All websites are stored on a single government-owned supercomputer.",
+                        "Internet access is guaranteed and controlled by the United Nations."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "Based on the text, what is the correct relationship between ARPANET and the Internet?",
+                    options: [
+                        "They are two names for the exact same network, used in different eras.",
+                        "ARPANET was a foundational project that developed the core technologies for what would become the Internet.",
+                        "The Internet was a commercial version of ARPANET developed by Netscape.",
+                        "ARPANET was the European network, while the Internet was the American version."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "The 'Dot-com boom' is a term used to describe which period in Internet history?",
+                    options: [
+                        "The initial ARPANET experiments in the 1960s.",
+                        "The period of rapid commercial growth and speculation of Internet-based companies in the mid-1990s.",
+                        "The development of the TCP/IP protocol in the 1980s.",
+                        "The creation of the first email message in 1971."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "What was the immediate impact of the HTML, URL, and HTTP triad developed by Tim Berners-Lee?",
+                    options: [
+                        "It increased the security of online financial transactions.",
+                        "It made navigating the network immensely more user-friendly and accessible to the non-technical public.",
+                        "It allowed computers from different manufacturers to communicate for the first time.",
+                        "It encrypted all network communications to protect privacy."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "The first successful ARPANET message transmission in 1969 connected which two institutions?",
+                    options: [
+                        "CERN and MIT",
+                        "UCLA and the Stanford Research Institute (SRI)",
+                        "Microsoft and Apple",
+                        "Harvard and Yale"
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "Analyzing its evolution, which factor was most critical in transitioning the Internet from an academic/military project to a global commercial platform?",
+                    options: [
+                        "The increased processing power of military computers.",
+                        "The creation of user-friendly interfaces, specifically graphical web browsers like Mosaic.",
+                        "The end of the Cold War, which made ARPANET's original purpose obsolete.",
+                        "The standardization of fiber-optic cables."
+                    ],
+                    answer: 1
+                },
+                 {
+                    question: "What did the widespread adoption of Netscape Navigator and Internet Explorer in the mid-90s signify for the general public?",
+                    options: [
+                        "The Internet became an accessible tool present in millions of households.",
+                        "The Internet became exclusively for government use.",
+                        "The end of email as a primary network tool.",
+                        "The mandatory requirement to pay by the hour for any website access."
+                    ],
+                    answer: 0
+                },
+                {
+                    question: "What fundamental networking concept is at the heart of TCP/IP?",
+                    options: [
+                        "Hyperlinking",
+                        "Packet switching and transmission control",
+                        "Markup language rendering",
+                        "Graphical user interfaces"
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "The growth of ARPANET throughout the 1970s and 1980s was primarily characterized by the connection of what types of organizations?",
+                    options: [
+                        "Banks and financial institutions",
+                        "Large commercial corporations",
+                        "Universities and research institutions",
+                        "News agencies and newspapers"
+                    ],
+                    answer: 2
+                },
+                {
+                    question: "The creation of the World Wide Web in 1990 can be seen as adding an 'application layer' on top of the existing Internet infrastructure. What does this mean?",
+                    options: [
+                        "The WWW completely replaced the previous Internet infrastructure.",
+                        "The WWW used the Internet's connectivity to create a system of interlinked hypertext documents.",
+                        "The WWW was a hardware system, while the Internet was the software.",
+                        "The WWW was created before the Internet."
+                    ],
+                    answer: 1
+                },
+                 {
+                    question: "What is the key conceptual difference between the 'Internet' and the 'World Wide Web'?",
+                    options: [
+                        "There is no difference; the terms are synonymous.",
+                        "The Internet is the global network of computers (the infrastructure), while the WWW is one of the services running on that network.",
+                        "The World Wide Web is the physical network of cables, and the Internet is the content.",
+                        "The Internet is an American project, and the World Wide Web is a European project."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "If ARPANET had not been designed with decentralization in mind, what would be a likely consequence for today's Internet?",
+                    options: [
+                        "It would be faster and more efficient.",
+                        "It would be more vulnerable to central points of failure and easier to control or censor.",
+                        "E-commerce would not exist.",
+                        "The World Wide Web would not have been invented."
+                    ],
+                    answer: 1
+                },
+                {
+                    question: "Which event marks the transition of the Internet from a primarily text-based experience to a graphical, multimedia one for the average user?",
+                    options: [
+                        "The sending of the first message in 1969.",
+                        "The standardization of TCP/IP.",
+                        "The invention of email.",
+                        "The release of graphical browsers like Mosaic."
+                    ],
+                    answer: 3
+                },
+                {
+                    question: "The text states the 'Dot-com boom' was an era of commercialization. Which company's browser, alongside Netscape's, was instrumental in this era?",
+                    options: [
+                        "Google's Chrome",
+                        "Apple's Safari",
+                        "Microsoft's Internet Explorer",
+                        "Opera"
+                    ],
+                    answer: 2
+                },
+                {
+                    question: "The initial growth of the pre-commercial Internet (1970s-80s) was driven by the needs of which community?",
+                    options: [
+                        "The financial sector",
+                        "The entertainment industry",
+                        "The academic and research community",
+                        "International diplomats"
+                    ],
+                    answer: 2
+                },
+                {
+                    question: "What core capability, introduced by the World Wide Web, fundamentally changed how information was accessed on the Internet?",
+                    options: [
+                        "The ability to send files from one computer to another.",
+                        "The concept of navigating between documents through hyperlinks.",
+                        "The ability to have a private, password-protected account.",
+                        "The ability to run programs remotely."
+                    ],
+                    answer: 1
+                }
+            ];
+
+            const startScreen = document.getElementById('start-screen');
+            const quizScreen = document.getElementById('quiz-screen');
+            const startBtn = document.getElementById('start-btn');
+            const quizForm = document.getElementById('quiz-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const resultsContainer = document.getElementById('results');
+            const timerElement = document.getElementById('timer');
+
+            let timeLeft = 5 * 60;
+            let timerInterval;
+
+            function startQuiz() {
+                startScreen.style.display = 'none';
+                quizScreen.style.display = 'block';
+                renderQuiz();
+                startTimer();
+            }
+
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    const minutes = Math.floor(timeLeft / 60);
+                    let seconds = timeLeft % 60;
+                    seconds = seconds < 10 ? '0' + seconds : seconds;
+
+                    timerElement.textContent = `${minutes}:${seconds}`;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timerElement.textContent = "Time's Up!";
+                        timerElement.style.backgroundColor = '#6c757d';
+                        blockQuiz();
+                        showResults();
+                    }
+                }, 1000);
+            }
+            
+            function renderQuiz() {
+                let quizHTML = '';
+                quizData.forEach((q, index) => {
+                    quizHTML += `
+                        <div class="question" id="question-${index}">
+                            <p>${index + 1}. ${q.question}</p>
+                            <div class="options">
+                    `;
+                    q.options.forEach((option, i) => {
+                        quizHTML += `
+                            <label>
+                                <input type="radio" name="question${index}" value="${i}">
+                                <span class="radio-custom"></span>
+                                <span>${option}</span>
+                            </label>
+                        `;
+                    });
+                    quizHTML += `</div></div>`;
+                });
+                quizForm.innerHTML = quizHTML;
+            }
+
+            function blockQuiz() {
+                const inputs = quizForm.querySelectorAll('input[type="radio"]');
+                inputs.forEach(input => input.disabled = true);
+                submitBtn.disabled = true;
+                submitBtn.style.background = '#999';
+            }
+
+            function showResults() {
+                clearInterval(timerInterval);
+                blockQuiz();
+                
+                let score = 0;
+                quizData.forEach((q, index) => {
+                    const questionElement = document.getElementById(`question-${index}`);
+                    const labels = questionElement.querySelectorAll('label');
+                    const selectedOption = quizForm.querySelector(`input[name="question${index}"]:checked`);
+
+                    const correctAnswerLabel = labels[q.answer];
+                    correctAnswerLabel.classList.add('correct');
+
+                    if (selectedOption) {
+                        const selectedValue = parseInt(selectedOption.value);
+                        if (selectedValue === q.answer) {
+                            score++;
+                        } else {
+                            const selectedLabel = selectedOption.parentElement;
+                            selectedLabel.classList.add('incorrect');
+                        }
+                    }
+                });
+
+                resultsContainer.style.display = 'block';
+                resultsContainer.innerHTML = `You scored ${score} out of ${quizData.length}.`;
+                window.scrollTo(0, 0); 
+            }
+            
+            startBtn.addEventListener('click', startQuiz);
+            submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                showResults();
+            });
+        });
+    </script>
+
+</body>
+</html>
